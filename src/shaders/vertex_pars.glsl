@@ -1,6 +1,11 @@
-
 uniform float uTime;
+uniform float uAmpl;
+uniform float uRad;
+uniform float uOriginalMin;
+uniform float uOriginalMax;
+uniform float uYPositionMultiplier;
 varying float vDisplacement;
+varying vec3 vPosition;
 
 vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
 vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
@@ -86,5 +91,5 @@ float fit(float unscaled, float originalMin, float originalMax, float minAllowed
 }
 
 float wave(vec3 position) {
-	return fit(smoothMod(position.y * 6.0, 1.0, 1.5), 0.35, 0.6, 0.0, 1.0);
+	return fit(smoothMod(position.y * uYPositionMultiplier, uAmpl, uRad), uOriginalMin, uOriginalMax, 0.0, 1.0);
 }

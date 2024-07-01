@@ -11,12 +11,21 @@ import vertexPars from './shaders/vertex_pars.glsl'
 import vertexMain from './shaders/vertex_main.glsl'
 import fragmentPars from './shaders/fragment_pars.glsl'
 import fragmentMain from './shaders/fragment_main.glsl'
+import colorFragmentPars from './shaders/color_fragment_pars.glsl'
+import colorFragmentMain from './shaders/color_fragment_main.glsl'
 
 const startApp = () => {
   const scene = useScene()
   const camera = useCamera()
   const gui = useGui()
   const { width, height } = useRenderSize()
+  const shapeSettings = {
+    ampl: 1,
+    rad: 1.5,
+    originalMin: 0.35,
+    originalMax: 0.6,
+    yPositionMultiplier: 6
+  }
 
   // lighting
   const dirLight = new THREE.DirectionalLight('#fff', 0.3)
@@ -28,34 +37,51 @@ const startApp = () => {
   // meshes
   const geometry = new THREE.IcosahedronGeometry(1, 400)
   const material = new THREE.MeshStandardMaterial({
+    side: THREE.DoubleSide,
     onBeforeCompile: (shader) => {
       // storing a reference to the shader object
       material.userData.shader = shader
 
       // uniforms
       shader.uniforms.uTime = { value: 0 }
+      shader.uniforms.uAmpl = { value: shapeSettings.ampl }
+      shader.uniforms.uRad = { value: shapeSettings.rad }
+      shader.uniforms.uOriginalMin = { value: shapeSettings.originalMin }
+      shader.uniforms.uOriginalMax = { value: shapeSettings.originalMax }
+      shader.uniforms.uYPositionMultiplier = { value: shapeSettings.yPositionMultiplier }
 
       const parsVertexString = /* glsl */ `#include <displacementmap_pars_vertex>`
       shader.vertexShader = shader.vertexShader.replace(
         parsVertexString,
-        parsVertexString + vertexPars
+        parsVertexString + '\n' + vertexPars
       )
 
       const mainVertexString = /* glsl */ `#include <displacementmap_vertex>`
       shader.vertexShader = shader.vertexShader.replace(
         mainVertexString,
-        mainVertexString + vertexMain
+        mainVertexString + '\n' + vertexMain
       )
 
       const mainFragmentString = /* glsl */ `#include <normal_fragment_maps>`
       const parsFragmentString = /* glsl */ `#include <bumpmap_pars_fragment>`
       shader.fragmentShader = shader.fragmentShader.replace(
         parsFragmentString,
-        parsFragmentString + fragmentPars
+        parsFragmentString + '\n' + fragmentPars
       )
       shader.fragmentShader = shader.fragmentShader.replace(
         mainFragmentString,
-        mainFragmentString + fragmentMain
+        mainFragmentString + '\n' + fragmentMain
+      )
+
+      const colorParsFragmentShader = /* glsl */ `#include <color_pars_fragment>`
+      shader.fragmentShader = shader.fragmentShader.replace(
+        colorParsFragmentShader,
+        colorParsFragmentShader + '\n' + colorFragmentPars
+      )
+      const colorFragmentShader = /* glsl */ `#include <color_fragment>`
+      shader.fragmentShader = shader.fragmentShader.replace(
+        colorFragmentShader,
+        colorFragmentShader + '\n' + colorFragmentMain
       )
     },
   })
@@ -66,26 +92,25 @@ const startApp = () => {
   // GUI
   const cameraFolder = gui.addFolder('Camera')
   cameraFolder.add(camera.position, 'z', 0, 10)
+  const shapeSettingsFolder = gui.addFolder('Shape Settings')
+  shapeSettingsFolder.add(shapeSettings, 'ampl', 0, 5)
+  shapeSettingsFolder.add(shapeSettings, 'rad', 0, 5)
+  shapeSettingsFolder.add(shapeSettings, 'originalMin', 0, 1)
+  shapeSettingsFolder.add(shapeSettings, 'originalMax', 0, 1)
+  shapeSettingsFolder.add(shapeSettings, 'yPositionMultiplier', 0, 30)
   cameraFolder.open()
 
-  addPass(new UnrealBloomPass(new THREE.Vector2(width, height), 0.7, 0.4, 0.4))
+  // addPass(new UnrealBloomPass(new THREE.Vector2(width, height), 0.7, 0.4, 0.4))
 
   let timePast = 0;
   useTick(({ timestamp, timeDiff }) => {
     const time = timestamp / 3000
     material.userData.shader.uniforms.uTime.value = time
-    if (time > timePast + 0.02) {
-      timePast = time;
-      const hue = (time % 1);
-
-      const color = new THREE.Color();
-      color.setHSL(hue, 0.8, 0.4);
-
-      if (dirLight) {
-        dirLight.color.set(color);
-        ambientLight.color.set(color);
-      }
-    }
+    material.userData.shader.uniforms.uAmpl.value = shapeSettings.ampl
+    material.userData.shader.uniforms.uRad.value = shapeSettings.rad
+    material.userData.shader.uniforms.uOriginalMin.value = shapeSettings.originalMin
+    material.userData.shader.uniforms.uOriginalMax.value = shapeSettings.originalMax
+    material.userData.shader.uniforms.uYPositionMultiplier.value = shapeSettings.yPositionMultiplier
   })
 }
 
