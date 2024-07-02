@@ -1,6 +1,5 @@
 uniform float uTime;
 varying float vDisplacement;
-varying vec3 vPosition;
 
 vec3 perturbNormalArb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection ) {
     vec3 vSigmaX = dFdx( surf_pos.xyz );

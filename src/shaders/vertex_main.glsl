@@ -1,3 +1,4 @@
+vUv = uv;
 vPosition = position;
 vec3 coords = normal;
 coords.y += uTime;
